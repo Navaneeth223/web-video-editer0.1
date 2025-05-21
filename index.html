@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Video Editor Concept</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none; /* Prevents pull-to-refresh on mobile for a more app-like feel */
+        }
+        .toolbar-icon {
+            width: 24px;
+            height: 24px;
+        }
+        /* Custom scrollbar for timeline (optional) */
+        .timeline-track::-webkit-scrollbar {
+            height: 8px;
+        }
+        .timeline-track::-webkit-scrollbar-track {
+            background: #2d3748; /* gray-800 */
+            border-radius: 10px;
+        }
+        .timeline-track::-webkit-scrollbar-thumb {
+            background: #4a5568; /* gray-600 */
+            border-radius: 10px;
+        }
+        .timeline-track::-webkit-scrollbar-thumb:hover {
+            background: #718096; /* gray-500 */
+        }
+        .modal {
+            display: none; /* Hidden by default */
+            animation: fadeIn 0.3s ease-out;
+        }
+        .modal.active {
+            display: flex;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .context-menu {
+            display: none;
+            position: absolute;
+            z-index: 1000;
+        }
+        .context-menu.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-200 flex flex-col h-screen overflow-hidden">
+
+    <header class="bg-slate-800 p-3 shadow-md flex justify-between items-center">
+        <h1 class="text-xl font-semibold text-sky-400">Video Editor Concept</h1>
+        <div class="flex space-x-2">
+            <button id="uploadVideoButton" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-150">
+                Upload Video
+            </button>
+            <input type="file" id="videoFileInput" accept="video/*" class="hidden">
+            <button id="exportButton" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-150">
+                Export (Concept)
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow flex flex-col md:flex-row overflow-hidden">
+
+        <aside class="w-full md:w-20 bg-slate-800 p-3 flex md:flex-col items-center space-x-2 md:space-x-0 md:space-y-3 overflow-y-auto">
+            <button class="tool-button p-2 rounded-lg hover:bg-slate-700 transition-colors" title="Select Tool (V)">
+                <svg class="toolbar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3.5m0 0V11"></path></svg>
+            </button>
+            <button id="trimTool" class="tool-button p-2 rounded-lg hover:bg-slate-700 transition-colors" title="Trim Tool (T)">
+                <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21H21"></path><path d="M5.88 5.88L18.12 18.12"></path><path d="M5.88 18.12L18.12 5.88"></path><path d="M12 5.88V3"></path><path d="M12 21v-2.88"></path><path d="M18.12 12H21"></path><path d="M3 12h2.88"></path></svg>
+            </button>
+            <button id="textTool" class="tool-button p-2 rounded-lg hover:bg-slate-700 transition-colors" title="Add Text (A)">
+                <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+            </button>
+            <button id="filterTool" class="tool-button p-2 rounded-lg hover:bg-slate-700 transition-colors" title="Filters (F)">
+                 <svg class="toolbar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+            </button>
+             <button id="musicTool" class="tool-button p-2 rounded-lg hover:bg-slate-700 transition-colors" title="Add Music (M)">
+                <svg class="toolbar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 6L6 5M6 17v-7a1 1 0 011-1h1"></path></svg>
+            </button>
+        </aside>
+
+        <section class="flex-grow flex flex-col bg-slate-950 p-1 md:p-2 overflow-hidden">
+            <div id="videoPlayerContainer" class="w-full aspect-video bg-black rounded-lg flex items-center justify-center mb-2 overflow-hidden shadow-inner">
+                <video id="videoPlayer" class="max-w-full max-h-full rounded-md" controls controlsList="nodownload noremoteplayback">
+                    Your browser does not support the video tag.
+                </video>
+                <p id="videoPlaceholder" class="text-slate-500 text-lg">Upload a video to start editing</p>
+            </div>
+            <div id="propertiesPanel" class="bg-slate-800 p-3 rounded-lg shadow h-32 md:h-40 overflow-y-auto">
+                <h3 class="text-md font-semibold text-sky-300 mb-2 border-b border-slate-700 pb-1">Properties</h3>
+                <p id="propertiesPlaceholder" class="text-sm text-slate-400">Select an element on the timeline to see its properties.</p>
+                </div>
+        </section>
+
+        <footer class="h-40 md:h-48 bg-slate-800 p-2 shadow-inner flex flex-col">
+            <div class="flex items-center justify-between mb-1 px-1">
+                <div class="flex space-x-2">
+                    <button id="zoomInButton" class="control-button p-1.5 rounded hover:bg-slate-700" title="Zoom In">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
+                    </button>
+                    <button id="zoomOutButton" class="control-button p-1.5 rounded hover:bg-slate-700" title="Zoom Out">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"></path></svg>
+                    </button>
+                </div>
+                <div id="currentTimeDisplay" class="text-sm text-slate-400">00:00:00 / 00:00:00</div>
+            </div>
+            <div id="timelineArea" class="timeline-track flex-grow bg-slate-900/70 rounded-md p-2 overflow-x-auto relative cursor-grab active:cursor-grabbing">
+                <div id="playhead" class="absolute top-0 bottom-0 w-0.5 bg-red-500 z-10 pointer-events-none" style="left: 0%;"></div>
+                <div class="h-full flex items-center relative">
+                    <div id="videoTrack" class="h-16 bg-sky-800/50 rounded-md flex items-center px-2 relative min-w-[200px] mr-2">
+                        <span class="text-xs text-sky-200">Video Track</span>
+                        </div>
+                    <div id="audioTrack" class="h-12 bg-emerald-800/50 rounded-md flex items-center px-2 relative min-w-[200px]">
+                        <span class="text-xs text-emerald-200">Audio Track</span>
+                        </div>
+                </div>
+                 <p id="timelinePlaceholder" class="absolute inset-0 flex items-center justify-center text-slate-600 text-sm pointer-events-none">Timeline Area - Upload a video to populate</p>
+            </div>
+        </footer>
+    </main>
+
+    <div id="genericModal" class="modal fixed inset-0 bg-slate-900 bg-opacity-80 items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 p-6 rounded-lg shadow-xl w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modalTitle" class="text-lg font-semibold text-sky-300">Modal Title</h3>
+                <button id="closeModalButton" class="text-slate-400 hover:text-slate-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="modalBody" class="text-sm text-slate-300">
+                <p>This is a conceptual modal. Tool functionality is not implemented.</p>
+            </div>
+            <div id="modalFooter" class="mt-6 flex justify-end space-x-2">
+                <button id="modalCancelButton" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 rounded-md text-sm">Cancel</button>
+                <button id="modalConfirmButton" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 rounded-md text-sm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="contextMenu" class="context-menu bg-slate-700 border border-slate-600 rounded-md shadow-lg py-1">
+        <button class="block w-full text-left px-4 py-1.5 text-sm text-slate-200 hover:bg-sky-600">Split Clip</button>
+        <button class="block w-full text-left px-4 py-1.5 text-sm text-slate-200 hover:bg-sky-600">Delete Clip</button>
+        <button class="block w-full text-left px-4 py-1.5 text-sm text-slate-200 hover:bg-sky-600">Properties</button>
+    </div>
+
+
+    <script>
+        // DOM Elements
+        const videoFileInput = document.getElementById('videoFileInput');
+        const uploadVideoButton = document.getElementById('uploadVideoButton');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const videoPlayerContainer = document.getElementById('videoPlayerContainer');
+        const videoPlaceholder = document.getElementById('videoPlaceholder');
+        const timelinePlaceholder = document.getElementById('timelinePlaceholder');
+        const propertiesPanel = document.getElementById('propertiesPanel');
+        const propertiesPlaceholder = document.getElementById('propertiesPlaceholder');
+        const currentTimeDisplay = document.getElementById('currentTimeDisplay');
+        const playhead = document.getElementById('playhead');
+        const timelineArea = document.getElementById('timelineArea');
+        const videoTrack = document.getElementById('videoTrack');
+        const audioTrack = document.getElementById('audioTrack'); // For future conceptual audio clips
+
+        // Tool Buttons (Conceptual)
+        const trimTool = document.getElementById('trimTool');
+        const textTool = document.getElementById('textTool');
+        const filterTool = document.getElementById('filterTool');
+        const musicTool = document.getElementById('musicTool');
+        const exportButton = document.getElementById('exportButton');
+        const zoomInButton = document.getElementById('zoomInButton');
+        const zoomOutButton = document.getElementById('zoomOutButton');
+
+        // Modal Elements
+        const genericModal = document.getElementById('genericModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        const closeModalButton = document.getElementById('closeModalButton');
+        const modalCancelButton = document.getElementById('modalCancelButton');
+        const modalConfirmButton = document.getElementById('modalConfirmButton');
+        
+        // Context Menu Elements
+        const contextMenu = document.getElementById('contextMenu');
+
+        let currentVideoDuration = 0;
+        let currentTimelineScale = 1; // 1 = 100% zoom
+
+        // --- Event Listeners ---
+
+        // Video Upload
+        uploadVideoButton.addEventListener('click', () => videoFileInput.click());
+        videoFileInput.addEventListener('change', handleVideoUpload);
+
+        function handleVideoUpload(event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('video/')) {
+                const fileURL = URL.createObjectURL(file);
+                videoPlayer.src = fileURL;
+                videoPlayer.classList.remove('hidden');
+                videoPlaceholder.classList.add('hidden');
+                timelinePlaceholder.classList.add('hidden');
+                
+                videoPlayer.onloadedmetadata = () => {
+                    currentVideoDuration = videoPlayer.duration;
+                    updateCurrentTimeDisplay();
+                    addClipToTimeline(file.name, videoPlayer.duration);
+                    URL.revokeObjectURL(videoPlayer.src); // Revoke object URL after loading into player to free memory
+                };
+                 videoPlayer.load(); // Important to load the video
+            } else {
+                showModalAlert("Invalid File", "Please select a valid video file.");
+            }
+        }
+
+        // Video Player Time Update
+        videoPlayer.addEventListener('timeupdate', () => {
+            updateCurrentTimeDisplay();
+            if (currentVideoDuration > 0) {
+                const percentage = (videoPlayer.currentTime / currentVideoDuration) * 100;
+                playhead.style.left = `${percentage}%`;
+            }
+        });
+        
+        videoPlayer.addEventListener('loadeddata', () => {
+             videoPlayer.classList.remove('hidden');
+             videoPlaceholder.classList.add('hidden');
+        });
+        
+        videoPlayer.addEventListener('error', (e) => {
+            console.error("Video Error:", e);
+            videoPlayer.classList.add('hidden');
+            videoPlaceholder.classList.remove('hidden');
+            videoPlaceholder.textContent = "Error loading video. Please try a different file or format.";
+            showModalAlert("Video Error", "Could not load the video. It might be corrupted or an unsupported format.");
+        });
+
+
+        // Timeline Interaction (Conceptual Drag for Playhead)
+        let isDraggingPlayhead = false;
+        timelineArea.addEventListener('mousedown', (e) => {
+            if (e.target === timelineArea || e.target.classList.contains('timeline-track') || e.target.closest('.timeline-clip')) { // Allow drag on clips too
+                isDraggingPlayhead = true;
+                updatePlayheadPosition(e);
+            }
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (isDraggingPlayhead) {
+                updatePlayheadPosition(e);
+            }
+        });
+        document.addEventListener('mouseup', () => {
+            if (isDraggingPlayhead) {
+                isDraggingPlayhead = false;
+            }
+        });
+
+        function updatePlayheadPosition(e) {
+            if (currentVideoDuration === 0) return;
+            const timelineRect = timelineArea.getBoundingClientRect();
+            let x = e.clientX - timelineRect.left;
+            x = Math.max(0, Math.min(x, timelineRect.width)); // Clamp within bounds
+            const percentage = (x / timelineRect.width) * 100;
+            playhead.style.left = `${percentage}%`;
+            videoPlayer.currentTime = (percentage / 100) * currentVideoDuration;
+            updateCurrentTimeDisplay();
+        }
+        
+        // Conceptual Context Menu on Timeline
+        timelineArea.addEventListener('contextmenu', function(event) {
+            event.preventDefault(); // Prevent default browser context menu
+            const targetClip = event.target.closest('.timeline-clip');
+            if (targetClip) {
+                contextMenu.style.left = `${event.clientX}px`;
+                contextMenu.style.top = `${event.clientY}px`;
+                contextMenu.classList.add('active');
+            } else {
+                 contextMenu.classList.remove('active');
+            }
+        });
+
+        // Hide context menu when clicking elsewhere
+        document.addEventListener('click', function(event) {
+            if (!contextMenu.contains(event.target)) {
+                contextMenu.classList.remove('active');
+            }
+        });
+
+
+        // --- Conceptual Tool Actions ---
+        trimTool.addEventListener('click', () => showModalAlert("Trim Tool", "This is a conceptual 'Trim' tool. Functionality not implemented."));
+        textTool.addEventListener('click', () => showModalAlert("Text Tool", "This is a conceptual 'Add Text' tool. Functionality not implemented."));
+        filterTool.addEventListener('click', () => showModalAlert("Filters", "This is a conceptual 'Filters' tool. Functionality not implemented."));
+        musicTool.addEventListener('click', () => showModalAlert("Music Tool", "This is a conceptual 'Add Music' tool. Functionality not implemented."));
+        exportButton.addEventListener('click', () => showModalAlert("Export", "This is a conceptual 'Export' feature. Functionality not implemented."));
+        
+        zoomInButton.addEventListener('click', () => {
+            currentTimelineScale = Math.min(5, currentTimelineScale + 0.25); // Max zoom 5x
+            updateTimelineZoom();
+            showModalAlert("Zoom In", `Timeline zoomed to ${Math.round(currentTimelineScale*100)}%. (Conceptual)`);
+        });
+        zoomOutButton.addEventListener('click', () => {
+            currentTimelineScale = Math.max(0.5, currentTimelineScale - 0.25); // Min zoom 0.5x
+            updateTimelineZoom();
+            showModalAlert("Zoom Out", `Timeline zoomed to ${Math.round(currentTimelineScale*100)}%. (Conceptual)`);
+        });
+
+        function updateTimelineZoom() {
+            // This is conceptual. In a real app, you'd adjust the width of clips
+            // and the timeline container's scroll width.
+            const clips = videoTrack.querySelectorAll('.timeline-clip');
+            clips.forEach(clip => {
+                const originalWidth = parseFloat(clip.dataset.originalWidth) || 100; // Assume 100px if not set
+                clip.style.width = `${originalWidth * currentTimelineScale}px`;
+            });
+        }
+
+        // --- Modal Functionality ---
+        function showModalAlert(title, message) {
+            modalTitle.textContent = title;
+            modalBody.innerHTML = `<p>${message}</p>`; // Use innerHTML if message can contain HTML
+            modalConfirmButton.classList.add('hidden'); // Hide confirm for simple alerts
+            modalCancelButton.textContent = 'OK';
+            genericModal.classList.add('active');
+        }
+        
+        closeModalButton.addEventListener('click', () => genericModal.classList.remove('active'));
+        modalCancelButton.addEventListener('click', () => genericModal.classList.remove('active'));
+        // modalConfirmButton can be used for modals requiring confirmation
+
+        // --- Helper Functions ---
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            return [
+                h,
+                m > 9 ? m : (h ? '0' + m : m), // only pad minutes if hours exist
+                s > 9 ? s : '0' + s
+            ].filter(Boolean).join(':').padStart(h ? 8 : 5, '00:'); // Ensure HH:MM:SS or MM:SS
+        }
+
+        function updateCurrentTimeDisplay() {
+            currentTimeDisplay.textContent = `${formatTime(videoPlayer.currentTime)} / ${formatTime(currentVideoDuration)}`;
+        }
+
+        function addClipToTimeline(clipName, duration) {
+            // Clear existing clips for simplicity in this concept
+            videoTrack.innerHTML = '<span class="text-xs text-sky-200 absolute top-1 left-2">Video Track</span>'; // Keep track label
+
+            const clipElement = document.createElement('div');
+            // Calculate width based on duration (e.g., 10 pixels per second, adjust as needed)
+            // This width needs to be responsive to timeline zoom as well.
+            const baseClipWidth = duration * 10 * currentTimelineScale; 
+            clipElement.style.width = `${baseClipWidth}px`;
+            clipElement.dataset.originalWidth = duration * 10; // Store base width for zoom
+            clipElement.className = 'timeline-clip h-12 bg-sky-600 rounded flex items-center justify-center text-xs text-white overflow-hidden whitespace-nowrap p-1 cursor-pointer hover:bg-sky-500 transition-colors ml-2'; // Added ml-2 for spacing
+            clipElement.textContent = clipName.length > 20 ? clipName.substring(0, 17) + '...' : clipName;
+            clipElement.title = clipName;
+            clipElement.dataset.duration = duration;
+
+            clipElement.addEventListener('click', () => {
+                propertiesPlaceholder.classList.add('hidden');
+                propertiesPanel.innerHTML = `
+                    <h3 class="text-md font-semibold text-sky-300 mb-2 border-b border-slate-700 pb-1">Clip: ${clipName}</h3>
+                    <p class="text-sm text-slate-400">Duration: ${formatTime(duration)}</p>
+                    <p class="text-sm text-slate-400">Status: Selected</p>
+                    <div class="mt-2">
+                        <label class="text-xs text-slate-500">Opacity:</label>
+                        <input type="range" min="0" max="100" value="100" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500">
+                    </div>
+                `;
+            });
+            videoTrack.appendChild(clipElement);
+        }
+        
+        // Initial setup
+        videoPlayer.classList.add('hidden'); // Hide player until video is loaded
+        updateCurrentTimeDisplay(); // Show 00:00 / 00:00 initially
+
+        // Make sure elements are present before adding event listeners if they are dynamically created
+        // For this conceptual app, they are static.
+
+        console.log("Video editor concept UI initialized.");
+    </script>
+</body>
+</html>
